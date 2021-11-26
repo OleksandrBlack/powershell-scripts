@@ -104,6 +104,15 @@
 .EXAMPLE
     Backup only specified databases of a named instance
     C:\PS>.\BackupSQL.ps1 -Instance SQLSVR01\BKUPEXEC -DataBases BEDB,msdb,model
+.PARAMETER CompresLevel
+    Compression zipfile level (Fastest,NoCompression,Optimal)
+    Default: Fastest
+.PARAMETER DBLogin
+    MS SQL Login
+    Default: None
+.PARAMETER DBPass
+    MS SQL Password
+    Default: None	
 .LINK
     https://github.com/juangranados/powershell-scripts/tree/main/SQL%20Server%20Backup
 .NOTES
@@ -145,7 +154,23 @@
         [Parameter(Mandatory=$false,Position=11)] 
         [ValidateSet("True","False")]
         [string[]]$SSL="False",
+		
+###### MOD ######
+	#Fastest,NoCompression,Optimal
         [Parameter(Mandatory=$false,Position=12)] 
+        [ValidateNotNullOrEmpty()]
+        [string]$CompresLevel="Fastest",
+		
+        [Parameter(Mandatory=$false,Position=13)] 
+        [ValidateNotNullOrEmpty()]
+        [string]$DBLogin="None",
+		
+        [Parameter(Mandatory=$false,Position=14)] 
+        [ValidateNotNullOrEmpty()]
+        [string]$DBPass="None",
+###### END MOD ######
+		
+        [Parameter(Mandatory=$false,Position=16)] 
         [ValidateNotNullOrEmpty()]
         [int]$Port=25,
         [Parameter()] 
@@ -227,8 +252,21 @@ if(!(Test-Path -Path $TempDirectory)) {
 
 try {
     Write-Output "Starting backup"
+
+###### MOD ######	
+    $mySrvConn = new-object Microsoft.SqlServer.Management.Common.ServerConnection
+    $mySrvConn.ServerInstance = $Instance
+    $mySrvConn.LoginSecure = $ConnectSecure
+    $mySrvConn.Login = $DBLogin
+    $mySrvConn.Password = $DBPass
+    $mySrvConn.LoginSecure = $False	
+    $mySrvConn.ConnectTimeout = 0	
+    $srv = new-object Microsoft.SqlServer.Management.SMO.Server($mySrvConn)	
+	
     # SQL Server
-    $srv = New-Object Microsoft.SqlServer.Management.Smo.Server $Instance  
+    #$srv = New-Object Microsoft.SqlServer.Management.Smo.Server $Instance  
+
+###### END MOD ######
     
     #Disable timeouts monitorization
     $srv.ConnectionContext.StatementTimeout = 0
@@ -277,7 +315,13 @@ try {
     Write-Output "Creating zip file in $BackupDirectory"
     # Zip compression
     Add-Type -assembly "system.io.compression.filesystem"
-    [io.compression.zipfile]::CreateFromDirectory($TempDirectory, $ZipFile) 
+	
+###### MOD ######
+    [io.compression.compressionlevel]$compression = $CompresLevel
+    [io.compression.zipfile]::CreateFromDirectory($TempDirectory, $ZipFile, $compression, 2) 
+###### END MOD ######
+	
+    #[io.compression.zipfile]::CreateFromDirectory($TempDirectory, $ZipFile) 
     #Get-Childitem $TempDirectory -Recurse | Write-Zip -IncludeEmptyDirectories -OutputPath $ZipFile -EntryPathRoot $TempDirectory
 
     # Show information about the size of file copied
