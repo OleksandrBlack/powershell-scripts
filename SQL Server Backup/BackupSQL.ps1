@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 1.0
+.VERSION 1.1
 
 .GUID 1069276e-50b4-414a-ae8c-b8801445ae7e
 
@@ -17,7 +17,7 @@
 .EXTERNALMODULEDEPENDENCIES
 
 .RELEASENOTES
-    Initial release
+    Fix switch parameters
 #>
 
 <#
@@ -119,7 +119,7 @@
         [Parameter(Mandatory=$false,Position=2)] 
         [ValidateNotNullOrEmpty()]
         [string]$Instance=$env:computerName,
-        [Parameter] 
+        [Parameter()] 
 		[switch]$FullBackup,
         [Parameter(Mandatory=$false,Position=4)] 
         [ValidateRange(0,36500)]
@@ -148,7 +148,7 @@
         [Parameter(Mandatory=$false,Position=12)] 
         [ValidateNotNullOrEmpty()]
         [int]$Port=25,
-        [Parameter] 
+        [Parameter()] 
 		[switch]$WriteEvent
     )
 Import-Module SQLServer -ErrorAction SilentlyContinue
@@ -189,7 +189,7 @@ if ($WriteEvent) {
 if ($TempDirectory -eq $BackupDirectory) {
     Write-Output "BackupDirectory can not be the same as TempDirectory. Script can not continue"
     if ($WriteEvent) {
-        Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Error –EventID 2 –Message "BackupDirectory can not be the same as TempDirectory. Script can not continue."
+        Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Error â€“EventID 2 â€“Message "BackupDirectory can not be the same as TempDirectory. Script can not continue."
     }
     Exit
 }
@@ -206,7 +206,7 @@ if(!(Test-Path -Path $BackupDirectory)) {
     } catch {
         Write-Output "$BackupDirectory does not exists and can not be created. Script can not continue"
         if ($WriteEvent) {
-           Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Error –EventID 2 –Message "SQL Backup Failed. $BackupDirectory does not exists and can not be created."
+           Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Error â€“EventID 2 â€“Message "SQL Backup Failed. $BackupDirectory does not exists and can not be created."
         }
         Exit
     }
@@ -219,7 +219,7 @@ if(!(Test-Path -Path $TempDirectory)) {
     } catch {
          Write-Output "$TempDirectory does not exists and can not be created. Script can not continue"
          if ($WriteEvent) {
-             Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Error –EventID 2 –Message "SQL Backup Failed.$TempDirectory does not exists and can not be created."
+             Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Error â€“EventID 2 â€“Message "SQL Backup Failed.$TempDirectory does not exists and can not be created."
          }
          Exit 
     }
@@ -234,7 +234,7 @@ try {
     $srv.ConnectionContext.StatementTimeout = 0
 
     # Delete temp folder archives         
-    Get-ChildItem –Path  $TempDirectory | Remove-Item
+    Get-ChildItem â€“Path  $TempDirectory | Remove-Item
     
     # Copy databases            
     foreach ($db in $srv.Databases) {
@@ -286,7 +286,7 @@ try {
     
     # Show information about the size of file copied on Windows Event Log
     if ($WriteEvent) {
-        Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Information –EventID 1 –Message "Backup $ZipFile stored. $DataSum MB copied"
+        Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Information â€“EventID 1 â€“Message "Backup $ZipFile stored. $DataSum MB copied"
     }
     # Preparing mail sending  
     if($SMTPServer -ne "None") {
@@ -319,11 +319,11 @@ try {
         try{
             Write-Output "Sending email"
             $smtp.Send($msg)
-            Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Information –EventID 4 –Message "Success backup result sent to $Recipient"
+            Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Information â€“EventID 4 â€“Message "Success backup result sent to $Recipient"
            } catch {
             # Write error on application event log
             if ($WriteEvent) {
-                Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Error –EventID 3 –Message "Error sending mail. " + "Exception Type: $($_.Exception.GetType().FullName)" + ". Exception Message: $($_.Exception.Message)"
+                Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Error â€“EventID 3 â€“Message "Error sending mail. " + "Exception Type: $($_.Exception.GetType().FullName)" + ". Exception Message: $($_.Exception.Message)"
             }
             write-host "Caught an exception:" -ForegroundColor Red
             write-host "Exception Type: $($_.Exception.GetType().FullName)" -ForegroundColor Red
@@ -332,7 +332,7 @@ try {
     }
     # Delete temp directory
     Write-Output "Deleting folder $TempDirectory"         
-    Remove-Item -Recurse -ErrorAction SilentlyContinue -Confirm:$false –Path $TempDirectory
+    Remove-Item -Recurse -ErrorAction SilentlyContinue -Confirm:$false â€“Path $TempDirectory
     
     # Delete old files from backup directory
     if ($RetainDays -ne 0) {
@@ -348,11 +348,11 @@ try {
     write-host "Exception Type: $($_.Exception.GetType().FullName)" -ForegroundColor Red
     write-host "Exception Message: $($_.Exception.Message)" -ForegroundColor Red
     # Delete temp directory         
-    Remove-Item -Recurse -ErrorAction SilentlyContinue -Confirm:$false –Path $TempDirectory
+    Remove-Item -Recurse -ErrorAction SilentlyContinue -Confirm:$false â€“Path $TempDirectory
     Write-Host "Script can not continue."
     # Write error on application event log
     if ($WriteEvent) {
-        Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Error –EventID 2 –Message "SQL Backup Failed" + "Exception Type: $($_.Exception.GetType().FullName)" + ". Exception Message: $($_.Exception.Message)"
+        Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Error â€“EventID 2 â€“Message "SQL Backup Failed" + "Exception Type: $($_.Exception.GetType().FullName)" + ". Exception Message: $($_.Exception.Message)"
     }
     # Sending email with backup result
     if ($SMTPServer -ne "None") {
@@ -364,11 +364,11 @@ try {
         Write-Output "Sending email"
         try{
         $smtp.Send($msg)
-        Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Information –EventID 4 –Message "Error backup result sent to $Recipient"
+        Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Information â€“EventID 4 â€“Message "Error backup result sent to $Recipient"
         } catch {
             # Write error on application event log
             if ($WriteEvent) {
-                Write-EventLog –LogName Application –Source "BackupSQL" –EntryType Error –EventID 3 –Message "Error sending mail. " + "Exception Type: $($_.Exception.GetType().FullName)" + ". Exception Message: $($_.Exception.Message)"
+                Write-EventLog â€“LogName Application â€“Source "BackupSQL" â€“EntryType Error â€“EventID 3 â€“Message "Error sending mail. " + "Exception Type: $($_.Exception.GetType().FullName)" + ". Exception Message: $($_.Exception.Message)"
             }
             write-host "Caught an exception:" -ForegroundColor Red
             write-host "Exception Type: $($_.Exception.GetType().FullName)" -ForegroundColor Red
